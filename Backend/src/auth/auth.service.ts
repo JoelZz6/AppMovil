@@ -19,11 +19,24 @@ export class AuthService {
     return null;
   }
 
-  async login(user: any) {
-    const payload = { email: user.email, sub: user.id, role:user.role };
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: { id: user.id, email: user.email, name: user.name, role:user.role },
-    };
-  }
+  // En tu auth.service.ts, cambia el login así:
+async login(user: any) {
+  const payload = {
+    email: user.email,
+    sub: user.id,
+    roles: user.roles,           // ← enviamos roles
+    businessDbName: user.businessDbName, // ← enviamos nombre de la DB
+  };
+
+  return {
+    access_token: this.jwtService.sign(payload),
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      roles: user.roles,
+      businessDbName: user.businessDbName,
+    },
+  };
+}
 }

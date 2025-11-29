@@ -1,3 +1,4 @@
+// src/users/users.service.ts
 import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -14,21 +15,30 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const { email, password, name } = createUserDto;
+
     const existingUser = await this.usersRepository.findOne({ where: { email } });
     if (existingUser) {
-      throw new ConflictException('Email ya existe');
+      throw new ConflictException('Este email ya está registrado');
     }
+
     const hashedPassword = await bcrypt.hash(password, 12);
-    const user = this.usersRepository.create({ email, password: hashedPassword, name, role: UserRole.CLIENTE, });
+
+    // CORREGIDO: ahora usamos "roles" (array) y no "role"
+    const user = this.usersRepository.create({
+      email,
+      password: hashedPassword,
+      name,
+      roles: [UserRole.CLIENTE], // ← Aquí estaba el error
+    });
+
     return this.usersRepository.save(user);
   }
-  
-  async findByEmail(email: string): Promise<User | null> {
-  return this.usersRepository.findOne({ where: { email } });
-}
 
-// Opcional: método para buscar por ID (UUID)
+  async findByEmail(email: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { email } });
+  }
+
   async findById(id: string): Promise<User | null> {
-  return this.usersRepository.findOne({ where: { id } });
+    return this.usersRepository.findOne({ where: { id } });
   }
 }

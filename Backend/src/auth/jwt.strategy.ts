@@ -1,3 +1,4 @@
+// src/auth/jwt.strategy.ts
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
@@ -12,7 +13,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
+  // ¡IMPORTANTE! Aquí devuelves TODO lo que necesitas en req.user
   async validate(payload: any) {
-    return { userId: payload.sub, email: payload.email };
+    return {
+      id: payload.sub,
+      email: payload.email,
+      roles: payload.roles || ['cliente'],        // ← ahora sí vienen los roles
+      businessDbName: payload.businessDbName,     // ← crucial para multi-tenant
+    };
   }
 }
