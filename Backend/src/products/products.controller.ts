@@ -38,10 +38,10 @@ export class ProductsController {
   }
 
   @Post('sale')
-  async sale(@Body() body: { productId: number; quantity: number; notes?: string }, @Req() req) {
+  async sale(@Body() body: { productId: number; quantity: number; notes?: string },@Req() req,) {
     const dbName = req.user.businessDbName;
     if (!dbName) throw new BadRequestException('No tienes negocio');
-    return this.productsService.registerSale(body.productId, body.quantity, dbName, body.notes);
+    return this.productsService.registerSale(body.productId,body.quantity,dbName,body.notes);
   }
 
   @Post('exchange')

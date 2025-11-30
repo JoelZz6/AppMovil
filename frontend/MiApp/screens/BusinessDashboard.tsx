@@ -21,6 +21,7 @@ const API_URL = 'http://192.168.0.8:3000';
 export default function BusinessDashboard({ navigation }: any) {
   const { user, token } = useAuth();
   const [products, setProducts] = useState<any[]>([]);
+  const [saleNote, setSaleNote] = useState('');
 
   // Formulario para agregar/editar
   const [form, setForm] = useState({
@@ -131,24 +132,26 @@ export default function BusinessDashboard({ navigation }: any) {
   };
 
   const registerSale = async () => {
-    const qty = parseInt(saleQuantity);
-    if (!selectedForSale || qty <= 0 || qty > selectedForSale.stock) {
-      return Alert.alert('Error', 'Cantidad inválida o insuficiente en stock');
-    }
-    try {
-      await axios.post(
-        `${API_URL}/products/sale`,
-        { productId: selectedForSale.id, quantity: qty },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      Alert.alert('Venta registrada', `Se vendieron ${qty} unidad(es)`);
-      setSaleModalVisible(false);
-      setSaleQuantity('1');
-      loadProducts();
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'No se pudo vender');
-    }
-  };
+  const qty = parseInt(saleQuantity);
+  if (!selectedForSale || qty <= 0 || qty > selectedForSale.stock) {
+    return Alert.alert('Error', 'Cantidad inválida');
+  }
+  try {
+    await axios.post(`${API_URL}/products/sale`, {
+      productId: selectedForSale.id,
+      quantity: qty,
+      notes: saleNote.trim() || null,
+    }, { headers: { Authorization: `Bearer ${token}` } });
+
+    Alert.alert('Venta registrada', '¡Listo!');
+    setSaleModalVisible(false);
+    setSaleQuantity('1');
+    setSaleNote('');
+    loadProducts();
+  } catch (error: any) {
+    Alert.alert('Error', error.response?.data?.message || 'No se pudo vender');
+  }
+};
 
   useEffect(() => {
     loadProducts();
@@ -173,6 +176,7 @@ export default function BusinessDashboard({ navigation }: any) {
               <TextInput placeholder="Stock" style={styles.input} keyboardType="numeric" value={form.stock} onChangeText={(t) => setForm({ ...form, stock: t })} />
               <TextInput placeholder="URL imagen" style={styles.input} value={form.imageUrl} onChangeText={(t) => setForm({ ...form, imageUrl: t })} />
               <Button title="Agregar Producto" onPress={addProduct} color="#28a745" />
+              <Button title="Ver Historial de Ventas" onPress={() => navigation.navigate('HistorialVentas')} color="#6c757d" />
             </View>
 
             <Text style={styles.section}>Mis Productos ({products.length})</Text>
@@ -248,29 +252,42 @@ export default function BusinessDashboard({ navigation }: any) {
       </Modal>
 
       {/* Modal Vender */}
-      <Modal visible={saleModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Registrar Venta</Text>
-            <Text style={{ fontSize: 18, marginBottom: 10, fontWeight: 'bold' }}>
-              {selectedForSale?.name}
-            </Text>
-            <Text>Stock disponible: {selectedForSale?.stock}</Text>
+      {/* Modal Vender con nota opcional */}
+<Modal visible={saleModalVisible} transparent animationType="fade">
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalTitle}>Registrar Venta</Text>
+      <Text style={{ fontSize: 18, marginBottom: 10, fontWeight: 'bold' }}>
+        {selectedForSale?.name}
+      </Text>
+      <Text>Stock disponible: {selectedForSale?.stock}</Text>
 
-            <TextInput
-              placeholder="Cantidad a vender"
-              keyboardType="numeric"
-              value={saleQuantity}
-              onChangeText={setSaleQuantity}
-              style={styles.input}
-            />
+      <TextInput
+        placeholder="Cantidad"
+        keyboardType="numeric"
+        value={saleQuantity}
+        onChangeText={setSaleQuantity}
+        style={styles.input}
+      />
 
-            <Button title="Confirmar Venta" onPress={registerSale} color="#28a745" />
-            <View style={{ height: 10 }} />
-            <Button title="Cancelar" onPress={() => { setSaleModalVisible(false); setSaleQuantity('1'); }} color="#6c757d" />
-          </View>
-        </View>
-      </Modal>
+      <TextInput
+        placeholder="Nota opcional (ej: cliente Juan, pago en efectivo)"
+        value={saleNote}
+        onChangeText={setSaleNote}
+        style={[styles.input, { height: 70 }]}
+        multiline
+      />
+
+      <Button title="Confirmar Venta" onPress={registerSale} color="#28a745" />
+      <View style={{ height: 10 }} />
+      <Button title="Cancelar" onPress={() => {
+        setSaleModalVisible(false);
+        setSaleQuantity('1');
+        setSaleNote('');
+      }} color="#6c757d" />
+    </View>
+  </View>
+</Modal>
     </>
   );
 }

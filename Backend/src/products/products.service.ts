@@ -1,5 +1,5 @@
 // src/products/products.service.ts
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 export interface CreateProductDto {
@@ -78,25 +78,26 @@ export class ProductsService {
   }
 
   async registerSale(productId: number, quantity: number, dbName: string, notes?: string) {
-    const businessDs = await this.getBusinessDataSource(dbName);
-    try {
-      // Registrar la venta
-      await businessDs.query(
-        `INSERT INTO sale (product_id, quantity, type, notes) VALUES ($1, $2, 'sale', $3)`,
-        [productId, quantity, notes || null]
-      );
+  const businessDs = await this.getBusinessDataSource(dbName);
+  try {
+    await businessDs.query(
+      `INSERT INTO sale (product_id, quantity, type, notes) 
+       VALUES ($1, $2, 'sale', $3)`,
+      [productId, quantity, notes || null]
+    );
 
-      // Restar del stock
-      await businessDs.query(
-        `UPDATE product SET stock = stock - $1 WHERE id = $2 AND stock >= $1`,
-        [quantity, productId]
-      );
+    const result = await businessDs.query(
+      `UPDATE product SET stock = stock - $1 WHERE id = $2 AND stock >= $1 RETURNING stock`,
+      [quantity, productId]
+    );
 
-      return { success: true, message: 'Venta registrada' };
-    } finally {
-      await businessDs.destroy();
-    }
+    if (result.rowCount === 0) throw new BadRequestException('Stock insuficiente');
+
+    return { success: true };
+  } finally {
+    await businessDs.destroy();
   }
+}
 
   async registerExchange(productId: number, quantity: number, dbName: string, notes: string) {
     const businessDs = await this.getBusinessDataSource(dbName);
