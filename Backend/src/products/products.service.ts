@@ -50,4 +50,86 @@ export class ProductsService {
       await businessDs.destroy();
     }
   }
+
+  async updateProduct(id: number, dto: CreateProductDto, dbName: string) {
+    const businessDs = await this.getBusinessDataSource(dbName);
+    try {
+      const result = await businessDs.query(
+        `UPDATE product 
+        SET name = $1, description = $2, price = $3, stock = $4, image_url = $5, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $6
+        RETURNING *`,
+        [dto.name, dto.description || null, dto.price, dto.stock || 0, dto.imageUrl || null, id],
+      );
+      return result[0];
+    } finally {
+      await businessDs.destroy();
+    }
+  }
+
+  async deleteProduct(id: number, dbName: string) {
+    const businessDs = await this.getBusinessDataSource(dbName);
+    try {
+      await businessDs.query(`DELETE FROM product WHERE id = $1`, [id]);
+      return { success: true };
+    } finally {
+      await businessDs.destroy();
+    }
+  }
+
+  async registerSale(productId: number, quantity: number, dbName: string, notes?: string) {
+    const businessDs = await this.getBusinessDataSource(dbName);
+    try {
+      // Registrar la venta
+      await businessDs.query(
+        `INSERT INTO sale (product_id, quantity, type, notes) VALUES ($1, $2, 'sale', $3)`,
+        [productId, quantity, notes || null]
+      );
+
+      // Restar del stock
+      await businessDs.query(
+        `UPDATE product SET stock = stock - $1 WHERE id = $2 AND stock >= $1`,
+        [quantity, productId]
+      );
+
+      return { success: true, message: 'Venta registrada' };
+    } finally {
+      await businessDs.destroy();
+    }
+  }
+
+  async registerExchange(productId: number, quantity: number, dbName: string, notes: string) {
+    const businessDs = await this.getBusinessDataSource(dbName);
+    try {
+      await businessDs.query(
+        `INSERT INTO sale (product_id, quantity, type, notes) VALUES ($1, $2, 'exchange', $3)`,
+        [productId, quantity, notes]
+      );
+
+      // Sumar al stock (devolución/cambio)
+      await businessDs.query(
+        `UPDATE product SET stock = stock + $1 WHERE id = $2`,
+        [quantity, productId]
+      );
+
+      return { success: true, message: 'Cambio registrado' };
+    } finally {
+      await businessDs.destroy();
+    }
+  }
+
+  async getSalesHistory(dbName: string) {
+    const businessDs = await this.getBusinessDataSource(dbName);
+    try {
+      const sales = await businessDs.query(`
+        SELECT s.*, p.name as product_name 
+        FROM sale s 
+        JOIN product p ON s.product_id = p.id 
+        ORDER BY s.created_at DESC
+      `);
+      return sales;
+    } finally {
+      await businessDs.destroy();
+    }
+  }
 }

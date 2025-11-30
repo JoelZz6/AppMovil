@@ -13,7 +13,7 @@ export class BusinessService {
     private businessRepo: Repository<Business>,
     @InjectRepository(User)
     private userRepo: Repository<User>,
-    private mainDataSource: DataSource, // Esta es la conexión principal (a la DB de usuarios)
+    private mainDataSource: DataSource,
   ) {}
 
   async createBusiness(dto: CreateBusinessDto, user: User) {
@@ -27,17 +27,19 @@ export class BusinessService {
     await this.mainDataSource.query(`CREATE DATABASE "${dbName}"`);
 
     // 2. Conectar a la nueva base de datos
-    const businessDataSource = await new DataSource({
+    const businessDataSource = new DataSource({
       type: 'postgres',
       host: 'localhost',
       port: 5432,
-      username: 'admin',        // ← Cambia por tu usuario de PostgreSQL
-      password: 'password',     // ← Cambia por tu contraseña
+      username: 'admin',
+      password: 'password',
       database: dbName,
-    }).initialize();
+    });
+
+    const ds = await businessDataSource.initialize();
 
     try {
-      // 3. Script SQL: crear tabla products
+      // 3. Crear tabla PRODUCT
       const createProductsTable = `
         CREATE TABLE product (
           id SERIAL PRIMARY KEY,
@@ -51,29 +53,40 @@ export class BusinessService {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
-        -- Índices útiles
         CREATE INDEX idx_product_name ON product(name);
         CREATE INDEX idx_product_active ON product(is_active);
       `;
 
-      await businessDataSource.query(createProductsTable);
+      await ds.query(createProductsTable);
 
-      // Puedes añadir más tablas aquí en el futuro:
-      // await businessDataSource.query(createCategoriesTable);
-      // await businessDataSource.query(createOrdersTable);
+      // 4. Crear tabla SALE (¡ESTA ES LA QUE FALTABA!)
+      const createSaleTable = `
+        CREATE TABLE sale (
+          id SERIAL PRIMARY KEY,
+          product_id INTEGER NOT NULL REFERENCES product(id) ON DELETE CASCADE,
+          quantity INTEGER NOT NULL CHECK (quantity > 0),
+          type VARCHAR(20) NOT NULL DEFAULT 'sale' CHECK (type IN ('sale', 'exchange')),
+          notes TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
 
-      console.log(`Tablas creadas exitosamente en ${dbName}`);
+        CREATE INDEX idx_sale_product ON sale(product_id);
+        CREATE INDEX idx_sale_type ON sale(type);
+        CREATE INDEX idx_sale_date ON sale(created_at DESC);
+      `;
+
+      await ds.query(createSaleTable);
+
+      console.log(`Tablas creadas exitosamente en ${dbName} (product + sale)`);
     } catch (error) {
       console.error('Error creando tablas:', error);
-      // Si falla, eliminamos la base de datos para no dejar basura
       await this.mainDataSource.query(`DROP DATABASE IF EXISTS "${dbName}"`);
-      throw new ConflictException('Error al inicializar el negocio');
+      throw new ConflictException('Error al crear las tablas del negocio');
     } finally {
-      // Siempre cerramos la conexión
-      await businessDataSource.destroy();
+      await ds.destroy();
     }
 
-    // 4. Guardar el negocio en la DB principal
+    // 5. Guardar negocio y actualizar usuario
     const business = this.businessRepo.create({
       ...dto,
       dbName,
@@ -81,13 +94,12 @@ export class BusinessService {
     });
     await this.businessRepo.save(business);
 
-    // 5. Actualizar usuario
     user.roles = [...new Set([...user.roles, UserRole.GERENTE_NEGOCIO, UserRole.EMPLEADO])];
     user.businessDbName = dbName;
     await this.userRepo.save(user);
 
     return {
-      message: 'Negocio creado con éxito y tablas inicializadas',
+      message: 'Negocio creado con éxito',
       business,
       user: {
         id: user.id,
