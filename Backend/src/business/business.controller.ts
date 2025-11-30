@@ -1,30 +1,38 @@
-// business/business.controller.ts
+// src/business/business.controller.ts
 import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common';
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtService } from '@nestjs/jwt'; // ← AÑADE ESTO
 
 @Controller('business')
 @UseGuards(JwtAuthGuard)
 export class BusinessController {
-  constructor(private businessService: BusinessService) {}
+  constructor(
+    private businessService: BusinessService,
+    private jwtService: JwtService, // ← Inyecta JwtService
+  ) {}
 
   @Post()
   async create(@Body() dto: CreateBusinessDto, @Req() req) {
     const result = await this.businessService.createBusiness(dto, req.user);
 
-  // FORZAMOS que siempre devuelva el usuario actualizado
-  return {
-    message: result.message,
-    business: result.business,
-    user: result.user || {
-      id: req.user.id,
-      email: req.user.email,
-      name: req.user.name,
-      roles: req.user.roles,
-      businessDbName: req.user.businessDbName,
-    },
-  };
+    // Generamos un NUEVO token con los datos actualizados
+    const payload = {
+      id: result.user.id,
+      email: result.user.email,
+      name: result.user.name,
+      roles: result.user.roles,
+      businessDbName: result.user.businessDbName, // ← ahora SÍ tiene valor
+    };
+    const newToken = this.jwtService.sign(payload);
+
+    return {
+      message: result.message,
+      business: result.business,
+      user: result.user,
+      token: newToken, // ← ¡¡ESTO ES LA CLAVE!!
+    };
   }
 
   @Post('my')

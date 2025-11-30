@@ -22,18 +22,20 @@ export default function CreateBusinessScreen({ navigation }: any) {
 
     try {
       const response = await axios.post(`${API_URL}/business`, form, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+  headers: { Authorization: `Bearer ${token}` },
+});
 
-      // ¡¡AQUÍ ESTÁ LA MAGIA!!
-  if (response.data.user) {
-    // Actualizamos el usuario en el contexto SIN cerrar sesión
-    await login(token!, response.data.user); // login viene de useAuth
-  }
+// ¡¡AHORA SÍ REFRESCAMOS EL TOKEN CORRECTAMENTE!!
+if (response.data.token && response.data.user) {
+  await login(response.data.token, response.data.user);
+} else if (response.data.user) {
+  // fallback (por si acaso)
+  await login(token!, response.data.user);
+}
 
-      Alert.alert('Éxito', '¡Tu negocio ha sido creado con éxito!', [
-        { text: 'Genial', onPress: () => navigation.replace('Home') },
-      ]);
+Alert.alert('Éxito', '¡Tu negocio ha sido creado con éxito!', [
+  { text: 'Genial', onPress: () => navigation.replace('Home') },
+]);
     } catch (err: any) {
       Alert.alert('Error', err.response?.data?.message || 'No se pudo crear el negocio');
     }

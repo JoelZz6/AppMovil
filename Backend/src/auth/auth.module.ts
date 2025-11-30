@@ -13,12 +13,14 @@ import { JwtAuthGuard } from './jwt-auth.guard';   // ← AÑADIR
     UsersModule,
     PassportModule,
     JwtModule.register({
+      //global: true,  //TAMBIEN FUNCIONA VUELVE GLOBAL ESTE Jwt PARA FIRMAS JWT, SIN ESTO TENDREMOS QUE IMPORTAR ESTE JWT EN 
+      //DONDE QUERRAMOS REALIZAR LAS FIRMAS
       secret: 'mi_secreto_super_secreto_cambia_esto_en_produccion',
       signOptions: { expiresIn: '24h' },
     }),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtAuthGuard],
-  exports: [AuthService, JwtAuthGuard],   // ← EXPORTAR EL GUARD
+  exports: [AuthService, JwtAuthGuard, JwtModule],   // ← EXPORTAR EL GUARD
 })
 export class AuthModule {}

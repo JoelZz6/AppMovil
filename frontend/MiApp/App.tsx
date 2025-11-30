@@ -6,6 +6,7 @@ import AuthScreen from './screens/AuthScreen';
 import HomeScreen from './screens/HomeScreen';
 import CreateBusinessScreen from './screens/CreateBusinessScreen';
 import { AuthProvider } from './contexts/AuthContext';
+import BusinessDashboard from './screens/BusinessDashboard';
 
 const Stack = createStackNavigator();
 
@@ -17,6 +18,7 @@ export default function App() {
           <Stack.Screen name="Auth" component={AuthScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="CreateBusiness" component={CreateBusinessScreen} />
+          <Stack.Screen name="BusinessDashboard" component={BusinessDashboard} options={{ title: 'Mi Negocio' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </AuthProvider>
