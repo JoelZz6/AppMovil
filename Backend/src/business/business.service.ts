@@ -65,13 +65,11 @@ export class BusinessService {
           id SERIAL PRIMARY KEY,
           product_id INTEGER NOT NULL REFERENCES product(id) ON DELETE CASCADE,
           quantity INTEGER NOT NULL CHECK (quantity > 0),
-          type VARCHAR(20) NOT NULL DEFAULT 'sale' CHECK (type IN ('sale', 'exchange')),
           notes TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
         CREATE INDEX idx_sale_product ON sale(product_id);
-        CREATE INDEX idx_sale_type ON sale(type);
         CREATE INDEX idx_sale_date ON sale(created_at DESC);
       `;
 

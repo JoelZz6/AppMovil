@@ -44,13 +44,6 @@ export class ProductsController {
     return this.productsService.registerSale(body.productId,body.quantity,dbName,body.notes);
   }
 
-  @Post('exchange')
-  async exchange(@Body() body: { productId: number; quantity: number; notes: string }, @Req() req) {
-    const dbName = req.user.businessDbName;
-    if (!dbName) throw new BadRequestException('No tienes negocio');
-    return this.productsService.registerExchange(body.productId, body.quantity, dbName, body.notes);
-  }
-
   @Get('history')
   async history(@Req() req) {
     const dbName = req.user.businessDbName;

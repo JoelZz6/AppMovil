@@ -81,8 +81,8 @@ export class ProductsService {
   const businessDs = await this.getBusinessDataSource(dbName);
   try {
     await businessDs.query(
-      `INSERT INTO sale (product_id, quantity, type, notes) 
-       VALUES ($1, $2, 'sale', $3)`,
+      `INSERT INTO sale (product_id, quantity, notes) 
+       VALUES ($1, $2, $3)`,
       [productId, quantity, notes || null]
     );
 
@@ -98,26 +98,6 @@ export class ProductsService {
     await businessDs.destroy();
   }
 }
-
-  async registerExchange(productId: number, quantity: number, dbName: string, notes: string) {
-    const businessDs = await this.getBusinessDataSource(dbName);
-    try {
-      await businessDs.query(
-        `INSERT INTO sale (product_id, quantity, type, notes) VALUES ($1, $2, 'exchange', $3)`,
-        [productId, quantity, notes]
-      );
-
-      // Sumar al stock (devolución/cambio)
-      await businessDs.query(
-        `UPDATE product SET stock = stock + $1 WHERE id = $2`,
-        [quantity, productId]
-      );
-
-      return { success: true, message: 'Cambio registrado' };
-    } finally {
-      await businessDs.destroy();
-    }
-  }
 
   async getSalesHistory(dbName: string) {
     const businessDs = await this.getBusinessDataSource(dbName);
