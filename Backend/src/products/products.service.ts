@@ -113,4 +113,53 @@ export class ProductsService {
       await businessDs.destroy();
     }
   }
+
+  async getAllProductsFromAllBusinesses() {
+  // 1. Traer todos los negocios con su nombre desde la DB principal
+  const businesses = await this.mainDataSource.query(`
+    SELECT "dbName", name AS business_name 
+    FROM business 
+    WHERE "dbName" IS NOT NULL AND "dbName" != ''
+  `);
+
+  if (businesses.length === 0) return [];
+
+  const allProducts: any[] = [];
+
+  // 2. Recorrer cada negocio
+  for (const business of businesses) {
+    const { dbName, business_name } = business;
+
+    let businessDs;
+    try {
+      businessDs = await this.getBusinessDataSource(dbName);
+
+      // 3. Traer productos de ESTE negocio
+      const products = await businessDs.query(`
+        SELECT 
+          id, name, description, price, stock, image_url, created_at
+        FROM product 
+        WHERE stock > 0 OR stock IS NULL
+        ORDER BY RANDOM()
+        LIMIT 15
+      `);
+
+      // 4. Añadir el nombre del negocio a cada producto
+      products.forEach((p: any) => {
+        p.business_name = business_name || 'Tienda';
+        p.business_db = dbName; // opcional: para futuro
+      });
+
+      allProducts.push(...products);
+    } catch (error) {
+      console.log(`Error conectando a ${dbName}:`, error.message);
+      // Si una DB falla, seguimos con las demás
+    } finally {
+      if (businessDs) await businessDs.destroy();
+    }
+  }
+
+  // 5. Mezclar todo aleatoriamente
+  return allProducts.sort(() => Math.random() - 0.5);
+}
 }

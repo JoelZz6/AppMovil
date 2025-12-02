@@ -3,6 +3,7 @@ import { Controller, Post, Body, Get, Req, UseGuards, Patch, Delete, Param, BadR
 import { ProductsService } from './products.service';
 import type { CreateProductDto } from './products.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from 'src/auth/public.decorator';
 
 @Controller('products')
 @UseGuards(JwtAuthGuard)
@@ -50,4 +51,10 @@ export class ProductsController {
     if (!dbName) throw new BadRequestException('No tienes negocio');
     return this.productsService.getSalesHistory(dbName);
   }
+
+  @Get('public/all-random')
+  @Public()
+async getAllProductsFromAllBusinesses() {
+  return this.productsService.getAllProductsFromAllBusinesses();
+}
 }
