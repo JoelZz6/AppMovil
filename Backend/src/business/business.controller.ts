@@ -1,9 +1,10 @@
 // src/business/business.controller.ts
-import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, Get, Param } from '@nestjs/common';
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt'; // ← AÑADE ESTO
+import { Public } from 'src/auth/public.decorator';
 
 @Controller('business')
 @UseGuards(JwtAuthGuard)
@@ -39,4 +40,10 @@ export class BusinessController {
   async getMyBusiness(@Req() req) {
     return this.businessService.getMyBusiness(req.user);
   }
+
+  @Get('public/:dbName')
+@Public()
+async getPublicBusiness(@Param('dbName') dbName: string) {
+  return this.businessService.getPublicInfo(dbName);
+}
 }

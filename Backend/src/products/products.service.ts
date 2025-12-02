@@ -162,4 +162,18 @@ export class ProductsService {
   // 5. Mezclar todo aleatoriamente
   return allProducts.sort(() => Math.random() - 0.5);
 }
+
+async getBusinessPublicProducts(dbName: string) {
+  const businessDs = await this.getBusinessDataSource(dbName);
+  try {
+    return await businessDs.query(`
+      SELECT id, name, price, image_url, stock, description 
+      FROM product 
+      WHERE stock > 0 OR stock IS NULL
+      ORDER BY created_at DESC
+    `);
+  } finally {
+    await businessDs.destroy();
+  }
+}
 }

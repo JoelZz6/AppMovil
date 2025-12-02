@@ -85,10 +85,14 @@ export class BusinessService {
     }
 
     // 5. Guardar negocio y actualizar usuario
-    const business = this.businessRepo.create({
-      ...dto,
-      dbName,
+    const business = this.businessRepo.create({    
+      name: dto.name,
+      category: dto.category,
+      description: dto.description,
+      phone: dto.phone,        // ← AQUÍ SÍ SE GUARDA EL TELÉFONO
+      address: dto.address,
       ownerId: user.id,
+      dbName: dbName,
     });
     await this.businessRepo.save(business);
 
@@ -113,4 +117,14 @@ export class BusinessService {
     if (!user.businessDbName) return null;
     return this.businessRepo.findOne({ where: { ownerId: user.id } });
   }
+
+  async getPublicInfo(dbName: string) {
+  const result = await this.mainDataSource.query(`
+    SELECT name, phone, description, category, address 
+    FROM business 
+    WHERE "dbName" = $1
+  `, [dbName]);
+
+  return result[0] || null; // ← DEVUELVE EL OBJETO DIRECTO
+}
 }

@@ -57,4 +57,10 @@ export class ProductsController {
 async getAllProductsFromAllBusinesses() {
   return this.productsService.getAllProductsFromAllBusinesses();
 }
+
+@Get('public/business/:dbName')
+@Public()
+async getBusinessProducts(@Param('dbName') dbName: string) {
+  return this.productsService.getBusinessPublicProducts(dbName);
+}
 }

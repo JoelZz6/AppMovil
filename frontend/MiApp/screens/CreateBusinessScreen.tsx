@@ -21,7 +21,9 @@ export default function CreateBusinessScreen({ navigation }: any) {
     if (!token) return Alert.alert('Error', 'No estás autenticado');
 
     try {
-      const response = await axios.post(`${API_URL}/business`, form, {
+      const response = await axios.post(`${API_URL}/business`, {
+        name: form.name,
+  phone: form.phone || null,  // ← envía el teléfono
   headers: { Authorization: `Bearer ${token}` },
 });
 

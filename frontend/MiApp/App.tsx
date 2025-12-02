@@ -8,6 +8,8 @@ import CreateBusinessScreen from './screens/CreateBusinessScreen';
 import { AuthProvider } from './contexts/AuthContext';
 import BusinessDashboard from './screens/BusinessDashboard';
 import SalesHistoryScreen from './screens/SalesHistoryScreen';
+import ProductDetailScreen from './screens/ProductDetailScreen';
+import PublicBusinessScreen from './screens/PublicBusinessScreen';
 
 const Stack = createStackNavigator();
 
@@ -21,6 +23,8 @@ export default function App() {
           <Stack.Screen name="CreateBusiness" component={CreateBusinessScreen} />
           <Stack.Screen name="BusinessDashboard" component={BusinessDashboard} options={{ title: 'Mi Negocio' }} />
           <Stack.Screen name="HistorialVentas" component={SalesHistoryScreen} options={{ title: 'Historial de Ventas' }} />
+          <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ title: 'Detalle del producto' }} />
+          <Stack.Screen name="PublicBusiness" component={PublicBusinessScreen} options={{ title: 'Tienda del gerente' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </AuthProvider>

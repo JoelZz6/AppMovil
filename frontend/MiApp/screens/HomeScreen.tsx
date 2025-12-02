@@ -51,6 +51,10 @@ export default function HomeScreen({ navigation }: any) {
   };
 
   const renderProduct = ({ item }: any) => (
+    <TouchableOpacity
+  onPress={() => navigation.navigate('ProductDetail', { product: item, fromStore: false })}
+  style={styles.productCard}
+>
     <View style={styles.productCard}>
       {item.image_url ? (
         <Image source={{ uri: item.image_url }} style={styles.productImage} />
@@ -65,6 +69,7 @@ export default function HomeScreen({ navigation }: any) {
         <Text style={styles.price}>${parseFloat(item.price).toFixed(2)}</Text>
       </View>
     </View>
+    </TouchableOpacity>
   );
 
   if (loading) {
