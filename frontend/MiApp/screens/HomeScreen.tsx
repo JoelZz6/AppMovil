@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 const API_URL = 'http://192.168.0.8:3000';
 const { width } = Dimensions.get('window');
@@ -81,7 +82,7 @@ export default function HomeScreen({ navigation }: any) {
     );
   }
 
-  return (
+    return (
     <View style={styles.container}>
       {/* Header con saludo */}
       <View style={styles.header}>
@@ -99,10 +100,10 @@ export default function HomeScreen({ navigation }: any) {
         }
         contentContainerStyle={{ padding: 10 }}
         showsVerticalScrollIndicator={false}
-        numColumns={2} // opcional: para ver 2 columnas como Instagram
+        numColumns={2}
       />
 
-      {/* Botones de negocio (mismo que antes) */}
+      {/* Botones de negocio */}
       <View style={styles.footerButtons}>
         {!hasBusiness ? (
           <TouchableOpacity
@@ -124,6 +125,14 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>
       </View>
+
+      {/* BOTÓN FLOTANTE DE CHAT - LUNA IA */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('Chat')}
+      >
+        <Ionicons name="chatbubble-ellipses" size={32} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -154,4 +163,21 @@ const styles = StyleSheet.create({
   logoutBtn: { backgroundColor: '#dc3545', padding: 14, borderRadius: 10, alignItems: 'center' },
   btnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   logoutText: { color: '#fff', fontWeight: 'bold' },
+    fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 100, // Arriba de los botones de abajo
+    backgroundColor: '#007bff',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    zIndex: 1000,
+  },
 });
