@@ -11,6 +11,7 @@ import SalesHistoryScreen from './screens/SalesHistoryScreen';
 import ProductDetailScreen from './screens/ProductDetailScreen';
 import PublicBusinessScreen from './screens/PublicBusinessScreen';
 import ChatScreen from './screens/ChatScreen';
+import AnalyticsScreen from './screens/AnalyticsScreen';
 
 const Stack = createStackNavigator();
 
@@ -26,6 +27,7 @@ export default function App() {
           <Stack.Screen name="HistorialVentas" component={SalesHistoryScreen} options={{ title: 'Historial de Ventas' }} />
           <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ title: 'Detalle del producto' }} />
           <Stack.Screen name="PublicBusiness" component={PublicBusinessScreen} options={{ title: 'Tienda del gerente' }} />
+          <Stack.Screen name="Analytics" component={AnalyticsScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} />
         </Stack.Navigator>
       </NavigationContainer>

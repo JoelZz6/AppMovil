@@ -61,7 +61,7 @@ export default function HomeScreen({ navigation }: any) {
         <Image source={{ uri: item.image_url }} style={styles.productImage} />
       ) : (
         <View style={styles.noImage}>
-          <Text style={{ color: '#999' }}>No photo</Text>
+          <Text style={{ color: '#999' }}>Sin imagen</Text>
         </View>
       )}
       <View style={styles.productInfo}>

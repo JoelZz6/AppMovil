@@ -316,6 +316,12 @@ export default function BusinessDashboard({ navigation }: any) {
               <Button title="Agregar Producto" onPress={addProduct} color="#28a745" />
               <View style={{ height: 10 }} />
               <Button title="Historial de Ventas" onPress={() => navigation.navigate('HistorialVentas')} color="#6c757d" />
+                <TouchableOpacity
+  style={styles.analyticsBtn}
+  onPress={() => navigation.navigate('Analytics')}
+>
+  <Text style={styles.btnText}>Análisis y Predicciones IA</Text>
+</TouchableOpacity>
             </View>
 
             <Text style={styles.section}>Mis Productos ({products.length})</Text>
@@ -432,4 +438,17 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderStyle: 'dashed',
   },
+  analyticsBtn: {
+  backgroundColor: '#6f42c1',  // púrpura moderno (como GitHub, Twitch)
+  padding: 14,
+  borderRadius: 15,
+  alignItems: 'center',
+  marginTop: 20,
+  elevation: 6,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0.3,
+  shadowRadius: 5,
+},
+btnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 });
