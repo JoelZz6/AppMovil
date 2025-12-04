@@ -1,69 +1,91 @@
-# main.py
+# ai-assistant/main.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 import ollama
-import asyncio
+import httpx
+import json
 
-app = FastAPI(title="Asistente IA - MiApp")
-
-# Modelo de mensaje
-class Message(BaseModel):
-    role: str  # "user" o "assistant"
-    content: str
+app = FastAPI(title="Luna IA - Con catálogo real")
 
 class ChatRequest(BaseModel):
     message: str
-    history: Optional[List[Message]] = None
-    business_db: Optional[str] = None  # futuro: contexto del negocio
+    history: Optional[List[dict]] = None
 
-# Sistema prompt inteligente (puedes mejorar esto después)
+# TU IP DEL BACKEND NESTJS
+NESTJS_URL = "http://192.168.0.8:3000"
+
 SYSTEM_PROMPT = """
-Eres un asistente virtual de una app de tiendas locales llamada MiApp.
-Tu nombre es Luna.
-Ayudas a los usuarios con:
-- Precios de productos
-- Disponibilidad (stock)
-- Horarios de atención
-- Formas de pago y envío
-- Información de tiendas
+Eres Luna, la asistente virtual de MiApp, una app de tiendas locales.
+Tienes acceso al catálogo completo de productos de todos los negocios.
 
-Sé amable, breve y útil. Usa emojis cuando sea natural.
-Si no sabes algo, di: "Déjame consultarlo con el vendedor".
+REGLAS:
+- Usa siempre la información real del catálogo.
+- Si el usuario pregunta por un producto, di: nombre, precio, stock y tienda.
+- Si hay stock, ofrece contactar por WhatsApp.
+- Sé amable, breve y útil.
+- Usa emojis naturales.
+- Responde solo en español.
+
+Ejemplo:
+Usuario: ¿Tienen camisas azules?
+Tú: ¡Sí! En "Udud" hay 3 camisas azules a $55.000 c/u. ¿Te contacto con el vendedor por WhatsApp?
 """
+
+# Cache del catálogo (actualizar cada 5 minutos)
+catalog_cache = None
+last_update = None
+
+async def get_catalog():
+    global catalog_cache, last_update
+    import time
+    now = time.time()
+    
+    # Refrescar cada 5 minutos
+    if catalog_cache is None or (last_update and now - last_update > 300):
+        async with httpx.AsyncClient() as client:
+            try:
+                res = await client.get(f"{NESTJS_URL}/products/ai/catalog")
+                catalog_cache = res.json()
+                last_update = now
+                print(f"Catálogo actualizado: {len(catalog_cache)} productos")
+            except:
+                print("Error actualizando catálogo")
+    
+    return catalog_cache or []
 
 @app.post("/chat")
 async def chat(request: ChatRequest):
     try:
-        # Preparar historial
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        # Obtener catálogo
+        catalog = await get_catalog()
+        catalog_text = json.dumps(catalog, ensure_ascii=False, indent=2)
+        
+        # Prompt con contexto real
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": f"Catálogo actual:\n{catalog_text}"},
+        ]
         
         if request.history:
-            for msg in request.history:
-                messages.append({"role": msg.role, "content": msg.content})
+            messages.extend(request.history)
         
         messages.append({"role": "user", "content": request.message})
 
-        # Llama a Ollama (modelo que tengas instalado)
         response = ollama.chat(
-            model="llama3.2:3b",  # Cambia por: mistral, gemma2, phi3, etc.
+            model="gpt-oss:20b-cloud",  # o mistral, gemma2, phi3
             messages=messages,
             options={
                 "temperature": 0.7,
-                "num_predict": 256,
+                "num_predict": 400,
             }
         )
 
-        assistant_reply = response['message']['content']
-
-        return {
-            "reply": assistant_reply,
-            "model": "llama3.2:3b"
-        }
+        return {"reply": response['message']['content']}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 def health():
-    return {"status": "IA Assistant corriendo con Ollama"}
+    return {"status": "Luna IA con catálogo real activa"}

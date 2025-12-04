@@ -176,4 +176,48 @@ async getBusinessPublicProducts(dbName: string) {
     await businessDs.destroy();
   }
 }
+//PARA CHAT IA
+async getFullCatalogForAI() {
+  const businesses = await this.mainDataSource.query(`
+    SELECT "dbName", name as business_name, phone 
+    FROM business 
+    WHERE "dbName" IS NOT NULL
+  `);
+
+  const catalog: any[] = [];
+
+  for (const business of businesses) {
+    const { dbName, business_name, phone } = business;
+    let ds;
+    try {
+      ds = await this.getBusinessDataSource(dbName);
+
+      const products = await ds.query(`
+        SELECT 
+          name,
+          description,
+          price::text as price,
+          stock,
+          image_url
+        FROM product 
+        WHERE stock > 0 OR stock IS NULL
+      `);
+
+      products.forEach((p: any) => {
+        catalog.push({
+          business_name,
+          business_phone: phone,
+          business_db: dbName,
+          ...p
+        });
+      });
+    } catch (error) {
+      console.log(`No se pudo leer ${dbName}:`, error.message);
+    } finally {
+      if (ds) await ds.destroy();
+    }
+  }
+
+  return catalog;
+}
 }

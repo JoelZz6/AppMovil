@@ -63,4 +63,11 @@ async getAllProductsFromAllBusinesses() {
 async getBusinessProducts(@Param('dbName') dbName: string) {
   return this.productsService.getBusinessPublicProducts(dbName);
 }
+
+// PARA CHAT IA
+@Get('ai/catalog')
+@Public()
+async getFullCatalogForAI() {
+  return this.productsService.getFullCatalogForAI();
+}
 }
