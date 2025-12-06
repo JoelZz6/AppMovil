@@ -13,8 +13,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-
-const API_URL = 'http://192.168.0.8:8001/analytics';
+import { API_ANALYTICS } from '../config'
 
 interface AnalyticsData {
   total_ventas?: number;
@@ -49,7 +48,7 @@ export default function AnalyticsScreen({ navigation }: any) {
     }
 
     try {
-      const res = await axios.post(API_URL, {
+      const res = await axios.post(API_ANALYTICS, {
         business_db: user.businessDbName,
       });
       setData(res.data);

@@ -13,7 +13,7 @@ class ChatRequest(BaseModel):
     history: Optional[List[dict]] = None
 
 # TU IP DEL BACKEND NESTJS
-NESTJS_URL = "http://192.168.0.8:3000"
+NESTJS_URL = "http://192.168.0.133:3000"
 
 SYSTEM_PROMPT = """
 Eres Luna, la asistente virtual de MiApp. Eres amable, directa y hablas como una amiga.

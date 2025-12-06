@@ -12,8 +12,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { Linking } from 'react-native';
-
-const API_URL = 'http://192.168.0.8:3000';
+import { API_MAIN } from '../config';
 
 export default function PublicBusinessScreen({ route, navigation }: any) {
   const { businessDbName, businessName } = route.params;
@@ -28,11 +27,11 @@ export default function PublicBusinessScreen({ route, navigation }: any) {
   const loadBusinessData = async () => {
     try {
       // 1. Cargar productos del negocio
-      const res = await axios.get(`${API_URL}/products/public/business/${businessDbName}`);
+      const res = await axios.get(`${API_MAIN}/products/public/business/${businessDbName}`);
       setProducts(res.data);
 
       // 2. Cargar info del negocio (nombre, teléfono, etc.)
-      const infoRes = await axios.get(`${API_URL}/business/public/${businessDbName}`);
+      const infoRes = await axios.get(`${API_MAIN}/business/public/${businessDbName}`);
       setBusinessInfo(infoRes.data);
     } catch (error: any) {
       console.log('Error:', error.response?.data || error.message);

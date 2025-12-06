@@ -12,8 +12,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-
-const API_URL = Platform.OS === 'ios' ? 'http://localhost:3000' : 'http://192.168.0.8:3000';
+import { API_MAIN } from '../config';
 
 export default function AuthScreen({ navigation }: any) {
   const [isLogin, setIsLogin] = useState(true);
@@ -38,11 +37,11 @@ export default function AuthScreen({ navigation }: any) {
   const handleSubmit = async () => {
     try {
       if (isLogin) {
-        const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+        const res = await axios.post(`${API_MAIN}/auth/login`, { email, password });
         await login(res.data.access_token, res.data.user);
         navigation.replace('Home');
       } else {
-        await axios.post(`${API_URL}/users/register`, { name, email, password });
+        await axios.post(`${API_MAIN}/users/register`, { name, email, password });
         Alert.alert('Éxito', 'Cuenta creada. Ahora inicia sesión');
         toggleForm();
       }

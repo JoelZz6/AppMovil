@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, ScrollView, Alert, TouchableOpacity, StyleSheet } from 'react-native';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-
-const API_URL = 'http://192.168.0.8:3000'; // Cambia si usas otro IP
+import { API_MAIN } from '../config';
 
 export default function CreateBusinessScreen({ navigation }: any) {
   const { token,login } = useAuth();
@@ -21,7 +20,7 @@ export default function CreateBusinessScreen({ navigation }: any) {
     if (!token) return Alert.alert('Error', 'No estás autenticado');
 
     try {
-      const response = await axios.post(`${API_URL}/business`, form, {
+      const response = await axios.post(`${API_MAIN}/business`, form, {
   headers: { Authorization: `Bearer ${token}` },
 });
 

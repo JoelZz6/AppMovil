@@ -10,8 +10,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-
-const API_URL = 'http://192.168.0.8:3000';
+import { API_MAIN } from '../config';
 
 export default function SalesHistoryScreen({ navigation }: any) {
   const { token } = useAuth();
@@ -21,7 +20,7 @@ export default function SalesHistoryScreen({ navigation }: any) {
 
   const loadSales = async () => {
     try {
-      const res = await axios.get(`${API_URL}/products/history`, {
+      const res = await axios.get(`${API_MAIN}/products/history`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSales(res.data);

@@ -30,8 +30,7 @@ import {
   openSettings,
 } from 'react-native-permissions';
 import { CLOUDINARY_CONFIG } from '../config/cloudinary';
-
-const API_URL = 'http://192.168.0.8:3000';
+import { API_MAIN } from '../config';
 
 export default function BusinessDashboard({ navigation }: any) {
   const { user, token } = useAuth();
@@ -60,7 +59,7 @@ export default function BusinessDashboard({ navigation }: any) {
 
   const loadProducts = async () => {
     try {
-      const res = await axios.get(`${API_URL}/products`, {
+      const res = await axios.get(`${API_MAIN}/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProducts(res.data);
@@ -172,7 +171,7 @@ export default function BusinessDashboard({ navigation }: any) {
     }
     try {
       await axios.post(
-        `${API_URL}/products`,
+        `${API_MAIN}/products`,
         {
           name: form.name.trim(),
           description: form.description.trim() || null,
@@ -207,7 +206,7 @@ export default function BusinessDashboard({ navigation }: any) {
     if (!editingProduct) return;
     try {
       await axios.patch(
-        `${API_URL}/products/${editingProduct.id}`,
+        `${API_MAIN}/products/${editingProduct.id}`,
         {
           name: form.name.trim(),
           description: form.description.trim() || null,
@@ -238,7 +237,7 @@ export default function BusinessDashboard({ navigation }: any) {
     }
     try {
       await axios.post(
-        `${API_URL}/products/sale`,
+        `${API_MAIN}/products/sale`,
         { productId: selectedForSale.id, quantity: qty, notes: saleNote.trim() || null },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -259,7 +258,7 @@ export default function BusinessDashboard({ navigation }: any) {
         text: 'Eliminar',
         style: 'destructive',
         onPress: async () => {
-          await axios.delete(`${API_URL}/products/${id}`, {
+          await axios.delete(`${API_MAIN}/products/${id}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           Alert.alert('Eliminado');

@@ -14,8 +14,8 @@ import {
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
+import { API_MAIN } from '../config';
 
-const API_URL = 'http://192.168.0.8:3000';
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }: any) {
@@ -31,7 +31,7 @@ export default function HomeScreen({ navigation }: any) {
     else setLoading(true);
 
     try {
-      const res = await axios.get(`${API_URL}/products/public/all-random`);
+      const res = await axios.get(`${API_MAIN}/products/public/all-random`);
       setProducts(res.data);
     } catch (error) {
       console.log('Error cargando productos públicos:', error);

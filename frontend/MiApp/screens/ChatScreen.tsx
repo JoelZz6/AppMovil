@@ -13,8 +13,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
-
-const API_URL = 'http://192.168.0.8:8000/chat'; // Cambia por tu IP local
+import { API_CHAT } from '../config';
 
 interface Message {
   id: string;
@@ -51,7 +50,7 @@ export default function ChatScreen({ navigation }: any) {
     setLoading(true);
 
     try {
-      const res = await axios.post(API_URL, {
+      const res = await axios.post(API_CHAT, {
         message: inputText,
         history: messages.map(m => ({
           role: m.isUser ? 'user' : 'assistant',
@@ -109,7 +108,7 @@ export default function ChatScreen({ navigation }: any) {
 
       {/* Chat */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'android' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <FlatList

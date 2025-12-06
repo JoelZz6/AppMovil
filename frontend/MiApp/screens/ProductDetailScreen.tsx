@@ -13,8 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import axios from 'axios';
-
-const API_URL = 'http://192.168.0.8:3000';
+import { API_MAIN } from '../config';
 
 interface Product {
   id: number;
@@ -42,7 +41,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
         return;
       }
       try {
-        const res = await axios.get(`${API_URL}/business/public/${product.business_db}`);
+        const res = await axios.get(`${API_MAIN}/business/public/${product.business_db}`);
         setBusinessInfo(res.data);
       } catch (error) {
         console.log('No se pudo cargar info del negocio');
