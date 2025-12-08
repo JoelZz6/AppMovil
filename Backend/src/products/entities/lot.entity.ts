@@ -1,12 +1,11 @@
-// src/products/entities/sale.entity.ts
-export const SaleSchema = {
-  name: 'sale',
+export const LotSchema = {
+  name: 'lot',
   columns: {
     id: { primary: true, type: 'int', generated: true },
     product_id: { type: 'int' },
-    quantity: { type: 'int' },
-    exit_price: { type: 'decimal', precision: 10, scale: 2 },  // Precio real de venta
-    notes: { type: 'text', nullable: true },
+    entry_price: { type: 'decimal', precision: 10, scale: 2 },  // Costo de entrada
+    quantity: { type: 'int' },  // Cantidad del lote
+    remaining: { type: 'int' },  // Cantidad restante (inicia con quantity)
     created_at: { type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' },
   },
   relations: {

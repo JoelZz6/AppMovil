@@ -67,7 +67,7 @@ export default function HomeScreen({ navigation }: any) {
       <View style={styles.productInfo}>
         <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
         <Text style={styles.businessName}>De: {item.business_name || 'Tienda'}</Text>
-        <Text style={styles.price}>${parseFloat(item.price).toFixed(2)}</Text>
+        <Text style={styles.market_price}>${parseFloat(item.market_price).toFixed(2)}</Text>
       </View>
     </View>
     </TouchableOpacity>
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   productInfo: { padding: 12 },
   productName: { fontSize: 16, fontWeight: 'bold', color: '#333' },
   businessName: { fontSize: 13, color: '#666', marginVertical: 4 },
-  price: { fontSize: 18, fontWeight: 'bold', color: '#28a745' },
+  market_price: { fontSize: 18, fontWeight: 'bold', color: '#28a745' },
   footerButtons: { padding: 20, gap: 12 },
   createBtn: { backgroundColor: '#28a745', padding: 16, borderRadius: 12, alignItems: 'center' },
   accessBtn: { backgroundColor: '#007bff', padding: 16, borderRadius: 12, alignItems: 'center' },

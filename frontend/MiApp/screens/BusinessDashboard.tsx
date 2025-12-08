@@ -36,16 +36,17 @@ export default function BusinessDashboard({ navigation }: any) {
   const { user, token } = useAuth();
   const [products, setProducts] = useState<any[]>([]);
 
-  // Formulario
+  // Formulario para NUEVO producto + primer lote
   const [form, setForm] = useState({
     name: '',
     description: '',
-    price: '',
-    stock: '',
+    market_price: '',
+    initial_entry_price: '',
+    initial_quantity: '',
     imageUrl: '',
   });
 
-  // Imagen temporal (para agregar y editar)
+  // Imagen
   const [tempImageUrl, setTempImageUrl] = useState<string>('');
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -56,6 +57,7 @@ export default function BusinessDashboard({ navigation }: any) {
   const [selectedForSale, setSelectedForSale] = useState<any>(null);
   const [saleQuantity, setSaleQuantity] = useState('1');
   const [saleNote, setSaleNote] = useState('');
+  const [salePrice, setSalePrice] = useState('');
 
   const loadProducts = async () => {
     try {
@@ -64,7 +66,7 @@ export default function BusinessDashboard({ navigation }: any) {
       });
       setProducts(res.data);
     } catch (error: any) {
-      console.log('Error cargando productos:', error.message);
+      console.log('Error:', error.message);
     }
   };
 
@@ -90,21 +92,20 @@ export default function BusinessDashboard({ navigation }: any) {
         return req === RESULTS.GRANTED;
       }
       if (result === RESULTS.BLOCKED) {
-  Alert.alert(
-    'Permiso necesario',
-    'Ve a Ajustes y permite el acceso para usar esta función',
-    [
-      {
+        Alert.alert(
+          'Permiso necesario',
+          'Ve a Ajustes y permite el acceso',
+          [
+            {
         text: 'Abrir Ajustes',
         onPress: () => openSettings(), // ✔️ FIX
       },
       { text: 'Cancelar', style: 'cancel' }
-    ]
-  );
-}
-
+          ]
+        );
+      }
       return false;
-    } catch (error) {
+    } catch {
       return false;
     }
   };
@@ -138,9 +139,9 @@ export default function BusinessDashboard({ navigation }: any) {
       const url = await uploadToCloudinary(file.uri);
       setTempImageUrl(url);
       setForm({ ...form, imageUrl: url });
-      Alert.alert('Éxito', 'Foto subida correctamente');
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo subir la imagen');
+      Alert.alert('Éxito', 'Foto subida');
+    } catch {
+      Alert.alert('Error', 'No se pudo subir');
     } finally {
       setUploadingImage(false);
     }
@@ -148,11 +149,7 @@ export default function BusinessDashboard({ navigation }: any) {
 
   const uploadToCloudinary = async (uri: string): Promise<string> => {
     const data = new FormData();
-    data.append('file', {
-      uri,
-      type: 'image/jpeg',
-      name: 'photo.jpg',
-    } as any);
+    data.append('file', { uri, type: 'image/jpeg', name: 'photo.jpg' } as any);
     data.append('upload_preset', CLOUDINARY_CONFIG.upload_preset);
 
     const res = await fetch(
@@ -160,32 +157,39 @@ export default function BusinessDashboard({ navigation }: any) {
       { method: 'POST', body: data }
     );
     const result = await res.json();
-    if (!result.secure_url) throw new Error('Upload failed');
+    if (!result.secure_url) throw new Error();
     return result.secure_url;
   };
 
   // === PRODUCTOS ===
   const addProduct = async () => {
-    if (!form.name.trim() || !form.price.trim()) {
-      return Alert.alert('Error', 'Nombre y precio son obligatorios');
+    if (
+      !form.name.trim() ||
+      !form.market_price ||
+      !form.initial_entry_price ||
+      !form.initial_quantity
+    ) {
+      return Alert.alert('Error', 'Todos los campos son obligatorios');
     }
+
     try {
       await axios.post(
         `${API_MAIN}/products`,
         {
           name: form.name.trim(),
           description: form.description.trim() || null,
-          price: parseFloat(form.price),
-          stock: parseInt(form.stock) || 0,
+          market_price: parseFloat(form.market_price),
+          initial_entry_price: parseFloat(form.initial_entry_price),
+          initial_quantity: parseInt(form.initial_quantity),
           imageUrl: form.imageUrl || null,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      Alert.alert('Éxito', 'Producto agregado');
+      Alert.alert('Éxito', 'Producto y lote inicial creados');
       resetForm();
       loadProducts();
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'No se pudo agregar');
+      Alert.alert('Error', error.response?.data?.message || 'Error al crear');
     }
   };
 
@@ -194,9 +198,10 @@ export default function BusinessDashboard({ navigation }: any) {
     setForm({
       name: product.name,
       description: product.description || '',
-      price: product.price.toString(),
-      stock: product.stock.toString(),
+      market_price: product.market_price?.toString() || '',
       imageUrl: product.image_url || '',
+      initial_entry_price: '',
+      initial_quantity: '',
     });
     setTempImageUrl(product.image_url || '');
     setEditModalVisible(true);
@@ -210,8 +215,7 @@ export default function BusinessDashboard({ navigation }: any) {
         {
           name: form.name.trim(),
           description: form.description.trim() || null,
-          price: parseFloat(form.price),
-          stock: parseInt(form.stock) || 0,
+          market_price: parseFloat(form.market_price) || undefined,
           imageUrl: form.imageUrl || null,
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -226,30 +230,55 @@ export default function BusinessDashboard({ navigation }: any) {
   };
 
   const resetForm = () => {
-    setForm({ name: '', description: '', price: '', stock: '', imageUrl: '' });
+    setForm({
+      name: '',
+      description: '',
+      market_price: '',
+      initial_entry_price: '',
+      initial_quantity: '',
+      imageUrl: '',
+    });
     setTempImageUrl('');
   };
 
   const registerSale = async () => {
-    const qty = parseInt(saleQuantity);
-    if (!selectedForSale || qty <= 0 || qty > selectedForSale.stock) {
-      return Alert.alert('Error', 'Cantidad inválida');
-    }
-    try {
-      await axios.post(
-        `${API_MAIN}/products/sale`,
-        { productId: selectedForSale.id, quantity: qty, notes: saleNote.trim() || null },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      Alert.alert('Venta registrada');
-      setSaleModalVisible(false);
-      setSaleQuantity('1');
-      setSaleNote('');
-      loadProducts();
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'No se pudo vender');
-    }
-  };
+  const qty = parseInt(saleQuantity);
+  const price = parseFloat(salePrice) || selectedForSale.market_price;
+
+  if (!selectedForSale || qty <= 0 || qty > selectedForSale.stock) {
+    return Alert.alert('Error', 'Cantidad inválida');
+  }
+
+  if (price <= 0) {
+    return Alert.alert('Error', 'El precio debe ser mayor a 0');
+  }
+
+  try {
+    await axios.post(
+      `${API_MAIN}/products/sale`,
+      {
+        productId: selectedForSale.id,
+        quantity: qty,
+        exit_price: price,  // ← PRECIO REAL DE VENTA
+        notes: saleNote.trim() || null,
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    Alert.alert(
+      'Venta registrada',
+      `Vendiste ${qty} x ${selectedForSale.name}\nPrecio final: $${price}`
+    );
+
+    setSaleModalVisible(false);
+    setSaleQuantity('1');
+    setSaleNote('');
+    setSalePrice('');
+    loadProducts();
+  } catch (error: any) {
+    Alert.alert('Error', error.response?.data?.message || 'No se pudo vender');
+  }
+};
 
   const deleteProduct = (id: number, name: string) => {
     Alert.alert('Eliminar', `¿Seguro que quieres eliminar "${name}"?`, [
@@ -268,7 +297,6 @@ export default function BusinessDashboard({ navigation }: any) {
     ]);
   };
 
-  // === RENDER IMAGEN ===
   const renderImagePicker = () => (
     <View style={{ marginVertical: 15 }}>
       <Text style={{ fontSize: 16, marginBottom: 8, color: '#333' }}>
@@ -306,21 +334,22 @@ export default function BusinessDashboard({ navigation }: any) {
             <Text style={styles.subtitle}>Bienvenido, {user?.name}</Text>
 
             <View style={styles.form}>
-              <Text style={styles.label}>Agregar Producto</Text>
+              <Text style={styles.label}>Crear Producto + Lote Inicial</Text>
               <TextInput placeholder="Nombre" style={styles.input} value={form.name} onChangeText={(t) => setForm({ ...form, name: t })} />
               <TextInput placeholder="Descripción" style={styles.input} value={form.description} onChangeText={(t) => setForm({ ...form, description: t })} />
-              <TextInput placeholder="Precio" style={styles.input} keyboardType="numeric" value={form.price} onChangeText={(t) => setForm({ ...form, price: t })} />
-              <TextInput placeholder="Stock" style={styles.input} keyboardType="numeric" value={form.stock} onChangeText={(t) => setForm({ ...form, stock: t })} />
+              <TextInput placeholder="Precio de venta" style={styles.input} keyboardType="numeric" value={form.market_price} onChangeText={(t) => setForm({ ...form, market_price: t })} />
+              <TextInput placeholder="Costo por unidad (primer lote)" style={styles.input} keyboardType="numeric" value={form.initial_entry_price} onChangeText={(t) => setForm({ ...form, initial_entry_price: t })} />
+              <TextInput placeholder="Cantidad inicial" style={styles.input} keyboardType="numeric" value={form.initial_quantity} onChangeText={(t) => setForm({ ...form, initial_quantity: t })} />
               {renderImagePicker()}
-              <Button title="Agregar Producto" onPress={addProduct} color="#28a745" />
-              <View style={{ height: 10 }} />
+              <Button title="Crear producto" onPress={addProduct} color="#28a745" />
+              <View style={{ height: 15 }} />
               <Button title="Historial de Ventas" onPress={() => navigation.navigate('HistorialVentas')} color="#6c757d" />
-                <TouchableOpacity
-  style={styles.analyticsBtn}
-  onPress={() => navigation.navigate('Analytics')}
->
-  <Text style={styles.btnText}>Análisis y Predicciones IA</Text>
-</TouchableOpacity>
+              <View style={{ height: 15 }} />
+              <Button title="Agregar lote a producto existente" onPress={() => navigation.navigate('AddLot', { 
+    onGoBack: loadProducts 
+  })} color="#fd7e14" />
+              <View style={{ height: 15 }} />
+              <Button title="Análisis IA" onPress={() => navigation.navigate('Analytics')} color="#6f42c1" />
             </View>
 
             <Text style={styles.section}>Mis Productos ({products.length})</Text>
@@ -332,7 +361,7 @@ export default function BusinessDashboard({ navigation }: any) {
               <Image source={{ uri: item.image_url }} style={styles.image} />
             ) : (
               <View style={styles.noImage}>
-                <Text style={{ color: '#888' }}>Sin imagen</Text>
+                <Text style={{ color: '#888' }}>Sin foto</Text>
               </View>
             )}
             <View style={styles.info}>
@@ -340,7 +369,7 @@ export default function BusinessDashboard({ navigation }: any) {
               <Text numberOfLines={2} style={{ color: '#666' }}>
                 {item.description || 'Sin descripción'}
               </Text>
-              <Text style={styles.price}>${parseFloat(item.price).toFixed(2)}</Text>
+              <Text style={styles.price}>${parseFloat(item.market_price).toFixed(2)}</Text>
               <Text style={{ color: item.stock === 0 ? '#dc3545' : '#444', fontWeight: item.stock === 0 ? 'bold' : 'normal' }}>
                 Stock: {item.stock} {item.stock === 0 && '(Agotado)'}
               </Text>
@@ -369,40 +398,81 @@ export default function BusinessDashboard({ navigation }: any) {
         )}
       />
 
-      {/* Modal Editar */}
+      {/* Modal Editar (SIN campo stock) */}
       <Modal visible={editModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
             <Text style={styles.modalTitle}>Editar Producto</Text>
             <TextInput placeholder="Nombre" style={styles.input} value={form.name} onChangeText={(t) => setForm({ ...form, name: t })} />
             <TextInput placeholder="Descripción" style={styles.input} value={form.description} onChangeText={(t) => setForm({ ...form, description: t })} />
-            <TextInput placeholder="Precio" style={styles.input} keyboardType="numeric" value={form.price} onChangeText={(t) => setForm({ ...form, price: t })} />
-            <TextInput placeholder="Stock" style={styles.input} keyboardType="numeric" value={form.stock} onChangeText={(t) => setForm({ ...form, stock: t })} />
+            <TextInput placeholder="Precio de venta" style={styles.input} keyboardType="numeric" value={form.market_price} onChangeText={(t) => setForm({ ...form, market_price: t })} />
+            <Text style={{ fontSize: 16, color: '#666', marginVertical: 10 }}>
+              Stock actual: {editingProduct?.stock || 0} (se modifica con lotes)
+            </Text>
             {renderImagePicker()}
-            <Button title="Guardar Cambios" onPress={updateProduct} color="#007bff" />
+            <Button title="Guardar" onPress={updateProduct} color="#007bff" />
             <View style={{ height: 10 }} />
             <Button title="Cancelar" onPress={() => { setEditModalVisible(false); resetForm(); }} color="#6c757d" />
           </ScrollView>
         </View>
       </Modal>
 
-      {/* Modal Vender */}
-      <Modal visible={saleModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Registrar Venta</Text>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
-              {selectedForSale?.name}
-            </Text>
-            <Text>Stock disponible: {selectedForSale?.stock}</Text>
-            <TextInput placeholder="Cantidad" keyboardType="numeric" value={saleQuantity} onChangeText={setSaleQuantity} style={styles.input} />
-            <TextInput placeholder="Nota (opcional)" value={saleNote} onChangeText={setSaleNote} style={[styles.input, { height: 80 }]} multiline />
-            <Button title="Confirmar Venta" onPress={registerSale} color="#28a745" />
-            <View style={{ height: 10 }} />
-            <Button title="Cancelar" onPress={() => { setSaleModalVisible(false); setSaleQuantity('1'); setSaleNote(''); }} color="#6c757d" />
-          </View>
-        </View>
-      </Modal>
+      {/* Modal Vender - CON PRECIO EDITABLE */}
+<Modal visible={saleModalVisible} transparent animationType="fade">
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalTitle}>Registrar Venta</Text>
+
+      <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+        {selectedForSale?.name}
+      </Text>
+
+      <Text style={{ color: '#666', marginBottom: 5 }}>
+        Precio sugerido: ${selectedForSale?.market_price}
+      </Text>
+
+      {/* Precio de salida (editable) */}
+      <TextInput
+        placeholder="Precio final (puedes bajar)"
+        style={[styles.input, { backgroundColor: '#fffbe6' }]}
+        keyboardType="numeric"
+        value={salePrice}
+        onChangeText={setSalePrice}
+      />
+
+      <Text style={{ marginTop: 10 }}>Stock disponible: {selectedForSale?.stock}</Text>
+
+      <TextInput
+        placeholder="Cantidad"
+        keyboardType="numeric"
+        value={saleQuantity}
+        onChangeText={setSaleQuantity}
+        style={styles.input}
+      />
+
+      <TextInput
+        placeholder="Nota (ej: cliente Juan, efectivo, QR, color, talla, etc)"
+        value={saleNote}
+        onChangeText={setSaleNote}
+        style={[styles.input, { height: 80 }]}
+        multiline
+      />
+
+      <Button title="Confirmar Venta" onPress={registerSale} color="#28a745" />
+      <View style={{ height: 10 }} />
+      <Button
+        title="Cancelar"
+        onPress={() => {
+          setSaleModalVisible(false);
+          setSaleQuantity('1');
+          setSaleNote('');
+          setSalePrice('');
+        }}
+        color="#6c757d"
+      />
+    </View>
+  </View>
+</Modal>
     </>
   );
 }
@@ -437,17 +507,4 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderStyle: 'dashed',
   },
-  analyticsBtn: {
-  backgroundColor: '#6f42c1',  // púrpura moderno (como GitHub, Twitch)
-  padding: 14,
-  borderRadius: 15,
-  alignItems: 'center',
-  marginTop: 20,
-  elevation: 6,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.3,
-  shadowRadius: 5,
-},
-btnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 });

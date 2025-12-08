@@ -1,14 +1,10 @@
 // src/products/products.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-
-export interface CreateProductDto {
-  name: string;
-  description?: string;
-  price: number;
-  stock?: number;
-  imageUrl?: string;
-}
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { AddLotDto } from './dto/add-lot.dto';
+import { RegisterSaleDto } from './dto/register-sale.dto';
 
 @Injectable()
 export class ProductsService {
@@ -27,45 +23,81 @@ export class ProductsService {
     }).initialize();
   }
 
-  async createProduct(dto: CreateProductDto, userBusinessDb: string) {
-    const businessDs = await this.getBusinessDataSource(userBusinessDb);
+  async createProduct(dto: CreateProductDto, dbName: string) {
+    const ds = await this.getBusinessDataSource(dbName);
     try {
-      const result = await businessDs.query(
-        `INSERT INTO product (name, description, price, stock, image_url)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        [dto.name, dto.description || null, dto.price, dto.stock || 0, dto.imageUrl || null],
+      const result = await ds.query(
+        `INSERT INTO product (name, description, market_price, image_url)
+        VALUES ($1, $2, $3, $4) RETURNING id`,
+        [dto.name, dto.description || null, dto.market_price, dto.imageUrl || null]
       );
-      return result[0];
+      const productId = result[0].id;
+
+      // Crear primer lote
+      await ds.query(
+        `INSERT INTO lot (product_id, entry_price, quantity, remaining)
+        VALUES ($1, $2, $3, $3)`,  // remaining inicia con quantity
+        [productId, dto.initial_entry_price, dto.initial_quantity]
+      );
+
+      return { productId, message: 'Producto y lote inicial creados' };
     } finally {
-      await businessDs.destroy();
+      await ds.destroy();
     }
   }
 
-  async getProducts(userBusinessDb: string) {
-    const businessDs = await this.getBusinessDataSource(userBusinessDb);
-    try {
-      return await businessDs.query(`SELECT * FROM product ORDER BY created_at DESC`);
-    } finally {
-      await businessDs.destroy();
-    }
+  async addLot(dto: AddLotDto, dbName: string) {
+  const ds = await this.getBusinessDataSource(dbName);
+  try {
+    await ds.query(
+      `INSERT INTO lot (product_id, entry_price, quantity, remaining)
+       VALUES ($1, $2, $3, $3)`,
+      [dto.productId, dto.entry_price, dto.quantity]
+    );
+    return { success: true };
+  } finally {
+    await ds.destroy();
   }
+}
 
-  async updateProduct(id: number, dto: CreateProductDto, dbName: string) {
-    const businessDs = await this.getBusinessDataSource(dbName);
-    try {
-      const result = await businessDs.query(
-        `UPDATE product 
-        SET name = $1, description = $2, price = $3, stock = $4, image_url = $5, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $6
-        RETURNING *`,
-        [dto.name, dto.description || null, dto.price, dto.stock || 0, dto.imageUrl || null, id],
-      );
-      return result[0];
-    } finally {
-      await businessDs.destroy();
-    }
+  async getProducts(dbName: string) {
+  const ds = await this.getBusinessDataSource(dbName);
+  try {
+    return await ds.query(`
+      SELECT 
+    p.*,
+    COALESCE(SUM(l.remaining), 0)::int AS stock
+FROM product p
+LEFT JOIN lot l ON l.product_id = p.id
+GROUP BY p.id
+ORDER BY 
+    CASE WHEN COALESCE(SUM(l.remaining), 0) > 0 THEN 0 ELSE 1 END,
+    p.name DESC;
+
+    `);
+  } finally {
+    await ds.destroy();
   }
+}
+
+  async updateProduct(id: number, dto: UpdateProductDto, dbName: string) {
+  const ds = await this.getBusinessDataSource(dbName);
+  try {
+    const result = await ds.query(
+      `UPDATE product SET 
+        name = COALESCE($1, name),
+        description = COALESCE($2, description),
+        market_price = COALESCE($3, market_price),
+        image_url = COALESCE($4, image_url),
+        updated_at = CURRENT_TIMESTAMP
+       WHERE id = $5 RETURNING *`,
+      [dto.name, dto.description, dto.market_price, dto.imageUrl, id]
+    );
+    return result[0];
+  } finally {
+    await ds.destroy();
+  }
+}
 
   async deleteProduct(id: number, dbName: string) {
     const businessDs = await this.getBusinessDataSource(dbName);
@@ -77,25 +109,38 @@ export class ProductsService {
     }
   }
 
-  async registerSale(productId: number, quantity: number, dbName: string, notes?: string) {
-  const businessDs = await this.getBusinessDataSource(dbName);
+  async registerSale(dto: RegisterSaleDto, dbName: string) {
+  const ds = await this.getBusinessDataSource(dbName);
   try {
-    await businessDs.query(
-      `INSERT INTO sale (product_id, quantity, notes) 
-       VALUES ($1, $2, $3)`,
-      [productId, quantity, notes || null]
+    // Deduct from lots (FIFO)
+    const lots = await ds.query(
+      `SELECT id, remaining FROM lot WHERE product_id = $1 AND remaining > 0 ORDER BY created_at ASC`,
+      [dto.productId]
     );
 
-    const result = await businessDs.query(
-      `UPDATE product SET stock = stock - $1 WHERE id = $2 AND stock >= $1 RETURNING stock`,
-      [quantity, productId]
-    );
+    let remainingQty = dto.quantity;
+    for (const lot of lots) {
+      if (remainingQty <= 0) break;
+      const deduct = Math.min(remainingQty, lot.remaining);
+      await ds.query(
+        `UPDATE lot SET remaining = remaining - $1 WHERE id = $2`,
+        [deduct, lot.id]
+      );
+      remainingQty -= deduct;
+    }
 
-    if (result.rowCount === 0) throw new BadRequestException('Stock insuficiente');
+    if (remainingQty > 0) throw new BadRequestException('Stock insuficiente');
+
+    // Registrar venta
+    await ds.query(
+      `INSERT INTO sale (product_id, quantity, exit_price, notes)
+       VALUES ($1, $2, $3, $4)`,
+      [dto.productId, dto.quantity, dto.exit_price, dto.notes || null]
+    );
 
     return { success: true };
   } finally {
-    await businessDs.destroy();
+    await ds.destroy();
   }
 }
 
@@ -136,12 +181,14 @@ export class ProductsService {
 
       // 3. Traer productos de ESTE negocio
       const products = await businessDs.query(`
-        SELECT 
-          id, name, description, price, stock, image_url, created_at
-        FROM product 
-        WHERE stock > 0 OR stock IS NULL
+        SELECT p.id, p.name, p.description, p.market_price, p.image_url, p.created_at
+        FROM product p
+        LEFT JOIN lot l ON l.product_id = p.id
+        WHERE p.is_active = true
+        GROUP BY p.id
+        HAVING COALESCE(SUM(l.remaining), 0) > 0
         ORDER BY RANDOM()
-        LIMIT 15
+        LIMIT 15;
       `);
 
       // 4. Añadir el nombre del negocio a cada producto
@@ -167,10 +214,14 @@ async getBusinessPublicProducts(dbName: string) {
   const businessDs = await this.getBusinessDataSource(dbName);
   try {
     return await businessDs.query(`
-      SELECT id, name, price, image_url, stock, description 
-      FROM product 
-      WHERE stock > 0 OR stock IS NULL
-      ORDER BY created_at DESC
+      SELECT p.id, p.name, p.description, p.market_price, p.image_url, p.created_at
+        FROM product p
+        LEFT JOIN lot l ON l.product_id = p.id
+        WHERE p.is_active = true
+        GROUP BY p.id
+        HAVING COALESCE(SUM(l.remaining), 0) > 0
+        ORDER BY RANDOM()
+        LIMIT 15;
     `);
   } finally {
     await businessDs.destroy();
@@ -196,11 +247,10 @@ async getFullCatalogForAI() {
         SELECT 
           name,
           description,
-          price::text as price,
-          stock,
+          market_price::text as market_price,
           image_url
         FROM product 
-        WHERE stock > 0 OR stock IS NULL
+        WHERE is_active = true
       `);
 
       products.forEach((p: any) => {

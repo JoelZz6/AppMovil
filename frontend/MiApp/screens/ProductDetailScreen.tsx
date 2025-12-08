@@ -19,8 +19,7 @@ interface Product {
   id: number;
   name: string;
   description?: string;
-  price: string | number;
-  stock: number;
+  market_price: string | number;
   image_url?: string;
   business_name?: string;
   business_db?: string;
@@ -30,8 +29,6 @@ export default function ProductDetailScreen({ route, navigation }: any) {
   const { product, fromStore = false }: { product: Product; fromStore?:Boolean } = route.params;
   const [businessInfo, setBusinessInfo] = useState<{ phone?: string } | null>(null);
   const [loadingInfo, setLoadingInfo] = useState(true);
-
-  const stockAvailable = product.stock > 0;
 
   useEffect(() => {
     // Cargar teléfono del negocio
@@ -86,7 +83,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
         <View style={styles.content}>
           <Text style={styles.name}>{product.name}</Text>
           <Text style={styles.price}>
-            ${typeof product.price === 'string' ? parseFloat(product.price).toFixed(2) : product.price.toFixed(2)}
+            ${typeof product.market_price === 'string' ? parseFloat(product.market_price).toFixed(2) : product.market_price.toFixed(2)}
           </Text>
 
           {product.description ? (
@@ -94,10 +91,6 @@ export default function ProductDetailScreen({ route, navigation }: any) {
           ) : (
             <Text style={styles.noDescription}>Sin descripción disponible</Text>
           )}
-
-          <Text style={[styles.stock, { color: stockAvailable ? '#28a745' : '#dc3545' }]}>
-            Stock: {stockAvailable ? `${product.stock} disponibles` : 'Agotado'}
-          </Text>
 
           <View style={styles.businessCard}>
             <Text style={styles.businessLabel}>Vendido por</Text>

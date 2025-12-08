@@ -79,7 +79,7 @@ export default function PublicBusinessScreen({ route, navigation }: any) {
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
         <Text style={styles.price}>
-          ${typeof item.price === 'string' ? parseFloat(item.price).toFixed(2) : item.price.toFixed(2)}
+          ${typeof item.market_price === 'string' ? parseFloat(item.market_price).toFixed(2) : item.market_price.toFixed(2)}
         </Text>
       </View>
     </TouchableOpacity>

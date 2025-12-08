@@ -12,6 +12,7 @@ import ProductDetailScreen from './screens/ProductDetailScreen';
 import PublicBusinessScreen from './screens/PublicBusinessScreen';
 import ChatScreen from './screens/ChatScreen';
 import AnalyticsScreen from './screens/AnalyticsScreen';
+import AddLotScreen from './screens/AddLotScreen';
 
 const Stack = createStackNavigator();
 
@@ -29,6 +30,7 @@ export default function App() {
           <Stack.Screen name="PublicBusiness" component={PublicBusinessScreen} options={{ title: 'Tienda del gerente' }} />
           <Stack.Screen name="Analytics" component={AnalyticsScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} />
+          <Stack.Screen name="AddLot" component={AddLotScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </AuthProvider>

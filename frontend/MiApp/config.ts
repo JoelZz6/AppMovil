@@ -1,5 +1,5 @@
 // IP base que solo cambias UNA VEZ
-const BASE_IP = 'http://192.168.0.133';
+const BASE_IP = 'http://192.168.0.8';
 
 // Servicios
 export const API_MAIN = `${BASE_IP}:3000`;

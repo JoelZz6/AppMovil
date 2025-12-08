@@ -45,8 +45,7 @@ export class BusinessService {
           id SERIAL PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           description TEXT,
-          price DECIMAL(10,2) NOT NULL,
-          stock INTEGER DEFAULT 0,
+          market_price DECIMAL(10,2) NOT NULL,
           image_url TEXT,
           is_active BOOLEAN DEFAULT true,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -59,12 +58,26 @@ export class BusinessService {
 
       await ds.query(createProductsTable);
 
+      const createLotTable = `
+        CREATE TABLE lot (
+          id SERIAL PRIMARY KEY,
+          product_id INTEGER REFERENCES product(id) ON DELETE CASCADE,
+          entry_price DECIMAL(10,2) NOT NULL,
+          quantity INTEGER NOT NULL,
+          remaining INTEGER NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `;
+
+      await ds.query (createLotTable);
+
       // 4. Crear tabla SALE (¡ESTA ES LA QUE FALTABA!)
       const createSaleTable = `
         CREATE TABLE sale (
           id SERIAL PRIMARY KEY,
-          product_id INTEGER NOT NULL REFERENCES product(id) ON DELETE CASCADE,
-          quantity INTEGER NOT NULL CHECK (quantity > 0),
+          product_id INTEGER REFERENCES product(id) ON DELETE CASCADE,
+          quantity INTEGER NOT NULL,
+          exit_price DECIMAL(10,2) NOT NULL,
           notes TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
